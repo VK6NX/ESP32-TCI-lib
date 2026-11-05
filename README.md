@@ -45,7 +45,7 @@ TCI (Transceiver Control Interface) is a network protocol by Expert Electronics 
 
 This project is an ESP32 adaptation developed on the basis of TCI, owned by Expert Electronics. It provides a TCI client for ESP32: it connects to a TCI server, reconnects automatically and passes parsed commands to user callbacks.
 
-**This is not a library with the full list of TCI commands.** It supports exactly the commands needed by the application, see [Usage](#usage). Other TCI commands are not supported.
+**This is not a library with the full list of TCI commands.** It supports exactly the commands needed by the application, see [Usage](#usage).
 
 The implemented commands are working and fully functional implementation examples. The exact list of commands needed for each project is determined by the developer from the vendor specification: [ExpertSDR3/TCI](https://github.com/ExpertSDR3/TCI).
 
@@ -166,7 +166,7 @@ Behavior:
 The full list of TCI commands is in the specification: [TCI Protocol 2.1.pdf](https://github.com/ExpertSDR3/TCI/blob/main/TCI%20Protocol%202.1.pdf).
 
 ## 💬 Status and Support <a name = "support"></a>
-The library is not a complete TCI implementation: it supports only the commands listed in [Usage](#usage). The implemented commands follow the vendor TCI specification. The library is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
+The implemented commands follow the vendor TCI specification. The library is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
 
 Questions about the library - Expert Electronics general support channel https://t.me/+80QDiqigD4hkZTI6
 
