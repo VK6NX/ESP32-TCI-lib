@@ -26,7 +26,7 @@ ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
 
 ---
 
-<p align="center"> WebSocket-клиент TCI (Transceiver Control Interface) для ESP32 (Arduino framework, PlatformIO).
+<p align="center"> WebSocket-клиент TCI v2.x (Transceiver Control Interface) для ESP32 (Arduino framework, PlatformIO).
     <br> 
 </p>
 
