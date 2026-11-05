@@ -77,7 +77,7 @@ cd ESP32-TCI-lib/esp32_TCI_example
 static const char* WIFI_SSID     = "your-ssid";
 static const char* WIFI_PASSWORD = "your-password";
 
-static const char* TCI_HOST = "192.168.16.200";
+static const char* TCI_HOST = "192.168.16.1";
 static const uint16_t TCI_PORT = 50001;
 ```
 
@@ -111,7 +111,7 @@ lib_deps =
 #include <WiFi.h>
 #include "tciclient.h"
 
-TCIClient tciClient("192.168.16.200", 50001);
+TCIClient tciClient("192.168.16.1", 50001);
 
 void setup() {
     // Сначала подключиться к WiFi
