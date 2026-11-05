@@ -73,8 +73,8 @@ Set the WiFi credentials and the TCI server address in [esp32_TCI_example/src/ma
 static const char* WIFI_SSID     = "your-ssid";
 static const char* WIFI_PASSWORD = "your-password";
 
-static const char* TCI_HOST = "192.168.1.100";
-static const uint16_t TCI_PORT = 40001;
+static const char* TCI_HOST = "192.168.16.200";
+static const uint16_t TCI_PORT = 50001;
 ```
 
 Build, upload and open the serial monitor:
