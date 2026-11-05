@@ -74,7 +74,7 @@ static const char* WIFI_SSID     = "your-ssid";
 static const char* WIFI_PASSWORD = "your-password";
 
 static const char* TCI_HOST = "192.168.16.200";
-static const uint16_t TCI_PORT = 40001;
+static const uint16_t TCI_PORT = 50001;
 ```
 
 Собрать, загрузить и открыть монитор последовательного порта:
