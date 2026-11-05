@@ -47,7 +47,7 @@ This project is an ESP32 adaptation developed on the basis of TCI, owned by Expe
 
 **This is not a library with the full list of TCI commands.** It supports exactly the commands needed by the application, see [Usage](#usage).
 
-The commands in the library are working and fully functional implementation examples. The exact list of commands needed for each project is determined by the developer from the vendor specification and added to their own copy of the library according to their goals and tasks. Adding only the needed commands keeps the ESP32 free of commands that the project does not use.
+The commands in the library are working and fully functional implementation examples. The exact list of commands needed for each project is determined by the developer from the vendor specification and added to their own copy of the library according to their goals and tasks. Adding only the needed commands keeps the ESP32 free of commands that the project does not use. Accordingly, when using this library, it is recommended to review the list of commands it already contains and comment out or remove those that are not intended to be used.
 
 | Path | Content |
 |------|---------|
