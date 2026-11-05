@@ -4,7 +4,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 ESP32 adaptation of TCI (Transceiver Control Interface).
 Developed on the basis of TCI, owned by Expert Electronics.
 TCI protocol specification: Copyright (c) 2021 Expert Electronics, MIT License
-  https://github.com/ExpertSDR3/TCI  (see licenses/TCI-LICENSE.txt)
+  https://github.com/ExpertSDR3/TCI  (see https://github.com/ExpertSDR3/TCI/blob/main/LICENSE)
 
 ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
   (see licenses/GPL-3.0.txt)
@@ -45,11 +45,15 @@ TCI (Transceiver Control Interface) is a network protocol by Expert Electronics 
 
 This project is an ESP32 adaptation developed on the basis of TCI, owned by Expert Electronics. It provides a TCI client for ESP32: it connects to a TCI server, reconnects automatically and passes parsed commands to user callbacks.
 
+**This is not a library with the full list of TCI commands.** It supports exactly the commands needed by the application, see [Usage](#usage). Other TCI commands are not supported.
+
+The implemented commands are working and fully functional implementation examples. The exact list of commands needed for each project is determined by the developer from the vendor specification: [ExpertSDR3/TCI](https://github.com/ExpertSDR3/TCI).
+
 | Path | Content |
 |------|---------|
 | [tci/](tci/) | Library: `TCIClient` and `TciMessageParser` |
 | [esp32_TCI_example/](esp32_TCI_example/) | Minimal PlatformIO example |
-| [TCI-spec/](TCI-spec/) | TCI protocol specification by Expert Electronics |
+| [ExpertSDR3/TCI](https://github.com/ExpertSDR3/TCI) | TCI protocol specification by Expert Electronics |
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 These instructions will get the example running on an ESP32 board.
@@ -133,22 +137,36 @@ void loop() {
 | `isConnected()`, `getStatus()` | Connection state: `Disconnected`, `Connecting`, `Connected` |
 | `getConnectionStatus()` | Connection state as a string |
 | `sendCommand(command)` | Send a TCI command, for example `"VFO:0,0,7100000;"`. Ignored when not connected |
+| `sendStart()`, `sendStop()` | Standard command: send `START;` / `STOP;`, start / stop the device |
+| `sendVfoRead(receiver, channel)` | Standard command: send `VFO:arg1,arg2;` (read), the reply comes to the VFO callback |
+| `sendVfoSet(receiver, channel, frequency)` | Standard command: send `VFO:arg1,arg2,arg3;` (set), frequency in Hz |
+| `sendTuneDrive(transceiver, power)` | Standard command: send `TUNE_DRIVE:arg1,arg2;`, power from 0 to 100 |
+| `sendCwMacros(transceiver, text)` | Standard command: send `CW_MACROS:arg1,arg2;`. In the text `:`, `,`, `;` are replaced with `^`, `~`, `*` as the specification requires |
 | `updateConnection(host, port)` | Change the server, the reconnection is done on the next `loop()` |
 | `setAddress(address)` | Set the address in the `ws://host:port` form, used on the next connection |
 | `getHost()`, `getPort()`, `getAddress()` | Current server address |
 | `setStatusChangeCallback(callback)` | Called on every status change |
-| `setVfoChangedCallback(callback)` | Called on `VFO:arg1,arg2,arg3;` with receiver, channel and frequency in Hz |
+| `setProtocolCallback(callback)` | Called on `PROTOCOL:arg1,arg2;` with program name and protocol version |
+| `setDeviceCallback(callback)` | Called on `DEVICE:arg1;` with device name |
+| `setTrxCountCallback(callback)` | Called on `TRX_COUNT:arg1;` with the number of receivers (transceivers) |
+| `setChannelsCountCallback(callback)` | Called on `CHANNELS_COUNT:arg1;` with the number of receive channels |
+| `setVfoLimitsCallback(callback)` | Called on `VFO_LIMITS:arg1,arg2;` with lower and upper frequency limits in Hz |
+| `setModulationsListCallback(callback)` | Called on `MODULATIONS_LIST:arg1,...,argN;` with the list of modulations |
+| `setVfoChangedCallback(callback)` | Called on `VFO:arg1,arg2,arg3;` with receiver, channel and frequency in Hz. Customization example |
 
 Behavior:
 - When the connection is lost, the status changes to `Connecting` and the client reconnects automatically every 5 seconds.
-- Incoming commands `VFO` and `READY` are recognized. `READY` has no user callback. `VFOCHANGED` is accepted as a custom alias of `VFO`, it is not a part of the TCI specification. Other commands and binary frames (IQ and audio streams) are ignored.
-- To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFOCHANGED`. The parser extracts up to three arguments.
+- Initialization commands are limited to `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` and `MODULATIONS_LIST`, the ones the example prints, and `READY`, which sets the status to `Connected`. Other initialization commands, for example `IF_LIMITS` and `RECEIVE_ONLY`, are ignored.
+- Standard commands, examples of sending: `START`, `STOP`, `VFO` (read and set), `TUNE_DRIVE` and `CW_MACROS`. In the example they are sent by keys from the serial monitor when the status is `Connected`: `s` START, `x` STOP, `r` VFO read, `v` VFO set, `t` TUNE_DRIVE, `c` CW_MACROS. The `c` key transmits on air.
+- Handling of the incoming `VFO` is a customization example: it shows how to add a command needed by the application. `VFOCHANGED` is accepted as a custom alias of `VFO`, it is not a part of the TCI specification.
+- Other commands and binary frames (IQ and audio streams) are ignored.
+- To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFO`. `extractArgs()` extracts up to three arguments, `extractList()` extracts a list of any length, as for `MODULATIONS_LIST`.
 - One `TCIClient` instance per program: WebSocket events are routed through a static instance pointer.
 
-The full list of TCI commands is in the specification: [TCI-spec/TCI_protocol.md](TCI-spec/TCI_protocol.md).
+The full list of TCI commands is in the specification: [TCI Protocol 2.1.pdf](https://github.com/ExpertSDR3/TCI/blob/main/TCI%20Protocol%202.1.pdf).
 
 ## 💬 Status and Support <a name = "support"></a>
-The library is fully functional, complies with the vendor TCI specification v2.0 and is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
+The library is not a complete TCI implementation: it supports only the commands listed in [Usage](#usage). The implemented commands follow the vendor TCI specification. The library is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
 
 Questions about the library - Expert Electronics general support channel https://t.me/+80QDiqigD4hkZTI6
 
@@ -158,7 +176,7 @@ Questions about the library - Expert Electronics general support channel https:/
 - [arduinoWebSockets](https://github.com/Links2004/arduinoWebSockets) 2.7.3 - WebSocket client
 
 ## ⚖️ License <a name = "license"></a>
-TCI (Transceiver Control Interface) is owned by Expert Electronics. The TCI protocol specification is Copyright (c) 2021 Expert Electronics and is distributed under the MIT License: https://github.com/ExpertSDR3/TCI, see [TCI-spec/MIT.txt](TCI-spec/MIT.txt).
+TCI (Transceiver Control Interface) is owned by Expert Electronics. The TCI protocol specification is Copyright (c) 2021 Expert Electronics and is distributed under the MIT License: https://github.com/ExpertSDR3/TCI, see [LICENSE](https://github.com/ExpertSDR3/TCI/blob/main/LICENSE).
 
 This ESP32 adaptation is developed on the basis of TCI. ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later, see [tci/licenses/GPL-3.0.txt](tci/licenses/GPL-3.0.txt).
 

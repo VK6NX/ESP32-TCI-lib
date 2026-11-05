@@ -4,7 +4,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 ESP32 adaptation of TCI (Transceiver Control Interface).
 Developed on the basis of TCI, owned by Expert Electronics.
 TCI protocol specification: Copyright (c) 2021 Expert Electronics, MIT License
-  https://github.com/ExpertSDR3/TCI  (see licenses/TCI-LICENSE.txt)
+  https://github.com/ExpertSDR3/TCI  (see https://github.com/ExpertSDR3/TCI/blob/main/LICENSE)
 
 ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
   (see licenses/GPL-3.0.txt)
@@ -45,11 +45,15 @@ TCI (Transceiver Control Interface) — сетевой протокол Expert E
 
 Данный проект — адаптация для ESP32, разработанная на основе TCI, владельцем которого является Expert Electronics. Проект реализует TCI-клиент для ESP32: подключается к TCI-серверу, автоматически переподключается и передаёт разобранные команды в пользовательские callback-функции.
 
+**Это не библиотека с полным списком команд TCI.** Она поддерживает ровно те команды, которые нужны для приложения, см. [Использование](#usage). Остальные команды TCI не поддерживаются.
+
+Реализованные команды — работающие и полностью функциональные примеры реализации. Точный список команд, нужных для каждого проекта, разработчик определяет сам по спецификации вендора: [ExpertSDR3/TCI](https://github.com/ExpertSDR3/TCI).
+
 | Путь | Содержимое |
 |------|------------|
 | [tci/](tci/) | Библиотека: `TCIClient` и `TciMessageParser` |
 | [esp32_TCI_example/](esp32_TCI_example/) | Минимальный пример для PlatformIO |
-| [TCI-spec/](TCI-spec/) | Спецификация протокола TCI от Expert Electronics |
+| [ExpertSDR3/TCI](https://github.com/ExpertSDR3/TCI) | Спецификация протокола TCI от Expert Electronics |
 
 ## 🏁 Начало работы <a name = "getting_started"></a>
 Эти инструкции помогут запустить пример на плате ESP32.
@@ -133,22 +137,36 @@ API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)):
 | `isConnected()`, `getStatus()` | Состояние подключения: `Disconnected`, `Connecting`, `Connected` |
 | `getConnectionStatus()` | Состояние подключения строкой |
 | `sendCommand(command)` | Отправить команду TCI, например `"VFO:0,0,7100000;"`. Без подключения игнорируется |
+| `sendStart()`, `sendStop()` | Стандартная команда: отправить `START;` / `STOP;`, запуск / остановка устройства |
+| `sendVfoRead(receiver, channel)` | Стандартная команда: отправить `VFO:arg1,arg2;` (чтение), ответ приходит в VFO callback |
+| `sendVfoSet(receiver, channel, frequency)` | Стандартная команда: отправить `VFO:arg1,arg2,arg3;` (установка), частота в Гц |
+| `sendTuneDrive(transceiver, power)` | Стандартная команда: отправить `TUNE_DRIVE:arg1,arg2;`, мощность от 0 до 100 |
+| `sendCwMacros(transceiver, text)` | Стандартная команда: отправить `CW_MACROS:arg1,arg2;`. В тексте `:`, `,`, `;` заменяются на `^`, `~`, `*`, как требует спецификация |
 | `updateConnection(host, port)` | Сменить сервер, переподключение выполняется в следующем `loop()` |
 | `setAddress(address)` | Задать адрес в виде `ws://host:port`, применяется при следующем подключении |
 | `getHost()`, `getPort()`, `getAddress()` | Текущий адрес сервера |
 | `setStatusChangeCallback(callback)` | Вызывается при каждой смене состояния |
-| `setVfoChangedCallback(callback)` | Вызывается на `VFO:arg1,arg2,arg3;` с номером приёмника, каналом и частотой в Гц |
+| `setProtocolCallback(callback)` | Вызывается на `PROTOCOL:arg1,arg2;` с названием программы и версией протокола |
+| `setDeviceCallback(callback)` | Вызывается на `DEVICE:arg1;` с названием устройства |
+| `setTrxCountCallback(callback)` | Вызывается на `TRX_COUNT:arg1;` с количеством приёмников (трансиверов) |
+| `setChannelsCountCallback(callback)` | Вызывается на `CHANNELS_COUNT:arg1;` с количеством каналов приёма |
+| `setVfoLimitsCallback(callback)` | Вызывается на `VFO_LIMITS:arg1,arg2;` с нижней и верхней границей частоты в Гц |
+| `setModulationsListCallback(callback)` | Вызывается на `MODULATIONS_LIST:arg1,...,argN;` со списком модуляций |
+| `setVfoChangedCallback(callback)` | Вызывается на `VFO:arg1,arg2,arg3;` с номером приёмника, каналом и частотой в Гц. Пример кастомизации |
 
 Поведение:
 - При потере связи состояние меняется на `Connecting`, клиент автоматически переподключается каждые 5 секунд.
-- Распознаются входящие команды `VFO` и `READY`. Для `READY` пользовательского callback нет. `VFOCHANGED` принимается как собственный псевдоним `VFO`, в спецификацию TCI он не входит. Остальные команды и бинарные кадры (IQ- и аудиопотоки) игнорируются.
-- Для обработки других команд нужно расширить `TciMessageParser::process()` в [tci/tciparser.cpp](tci/tciparser.cpp) так же, как сделано для `VFOCHANGED`. Парсер извлекает до трёх аргументов.
+- Команды инициализации ограничены командами `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` и `MODULATIONS_LIST`, которые выводит пример, и `READY`, который переводит состояние в `Connected`. Остальные команды инициализации, например `IF_LIMITS` и `RECEIVE_ONLY`, игнорируются.
+- Стандартные команды, примеры отправки: `START`, `STOP`, `VFO` (чтение и установка), `TUNE_DRIVE` и `CW_MACROS`. В примере они отправляются клавишами из монитора последовательного порта при состоянии `Connected`: `s` START, `x` STOP, `r` чтение VFO, `v` установка VFO, `t` TUNE_DRIVE, `c` CW_MACROS. Клавиша `c` включает передачу в эфир.
+- Обработка входящей `VFO` — пример кастомизации: показывает, как добавить команду, нужную приложению. `VFOCHANGED` принимается как собственный псевдоним `VFO`, в спецификацию TCI он не входит.
+- Остальные команды и бинарные кадры (IQ- и аудиопотоки) игнорируются.
+- Для обработки других команд нужно расширить `TciMessageParser::process()` в [tci/tciparser.cpp](tci/tciparser.cpp) так же, как сделано для `VFO`. `extractArgs()` извлекает до трёх аргументов, `extractList()` — список любой длины, как для `MODULATIONS_LIST`.
 - Один экземпляр `TCIClient` на программу: события WebSocket передаются через статический указатель на экземпляр.
 
-Полный список команд TCI — в спецификации: [TCI-spec/TCI_protocol.md](TCI-spec/TCI_protocol.md).
+Полный список команд TCI — в спецификации: [TCI Protocol_RU 2.1.pdf](https://github.com/ExpertSDR3/TCI/blob/main/TCI%20Protocol_RU%202.1.pdf).
 
 ## 💬 Статус и поддержка <a name = "support"></a>
-Библиотека полностью работоспособна, соответствует спецификации вендора TCI 2.0 и автором используется в проектах https://vk6nx.net/ER-PWR_control_en.html и https://vk6nx.net/ER-G450_control_en.html.
+Библиотека не является полной реализацией TCI: она поддерживает только команды, перечисленные в разделе [Использование](#usage). Реализованные команды соответствуют спецификации вендора. Библиотека используется автором в проектах https://vk6nx.net/ER-PWR_control_en.html и https://vk6nx.net/ER-G450_control_en.html.
 
 Вопросы по библиотеке — канал общей поддержки Expert Electronics https://t.me/+80QDiqigD4hkZTI6
 
@@ -158,7 +176,7 @@ API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)):
 - [arduinoWebSockets](https://github.com/Links2004/arduinoWebSockets) 2.7.3 — WebSocket-клиент
 
 ## ⚖️ Лицензия <a name = "license"></a>
-Владельцем TCI (Transceiver Control Interface) является Expert Electronics. Спецификация протокола TCI — Copyright (c) 2021 Expert Electronics, распространяется под лицензией MIT: https://github.com/ExpertSDR3/TCI, см. [TCI-spec/MIT.txt](TCI-spec/MIT.txt).
+Владельцем TCI (Transceiver Control Interface) является Expert Electronics. Спецификация протокола TCI — Copyright (c) 2021 Expert Electronics, распространяется под лицензией MIT: https://github.com/ExpertSDR3/TCI, см. [LICENSE](https://github.com/ExpertSDR3/TCI/blob/main/LICENSE).
 
 Данная адаптация для ESP32 разработана на основе TCI. Адаптация для ESP32: Copyright (c) 2026 VK6NX, GPL-3.0-or-later, см. [tci/licenses/GPL-3.0.txt](tci/licenses/GPL-3.0.txt).
 
