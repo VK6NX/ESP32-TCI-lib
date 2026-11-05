@@ -148,7 +148,7 @@ Behavior:
 The full list of TCI commands is in the specification: [TCI-spec/TCI_protocol.md](TCI-spec/TCI_protocol.md).
 
 ## 💬 Status and Support <a name = "support"></a>
-The library is fully functional, complies with the vendor specification and is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
+The library is fully functional, complies with the vendor TCI specification v2.0 and is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
 
 Questions about the library - Expert Electronics general support channel https://t.me/+80QDiqigD4hkZTI6
 
@@ -164,8 +164,6 @@ This ESP32 adaptation is developed on the basis of TCI. ESP32 adaptation: Copyri
 
 ## ✍️ Authors <a name = "authors"></a>
 - [@VK6NX](https://github.com/VK6NX) - ESP32 adaptation
-
-See also the list of [contributors](https://github.com/VK6NX/ESP32-TCI-lib/contributors) who participated in this project.
 
 ## 🎉 Acknowledgments <a name = "acknowledgement"></a>
 - [Expert Electronics](https://github.com/ExpertSDR3/TCI) - TCI protocol and specification
