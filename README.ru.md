@@ -126,7 +126,7 @@ void loop() {
 }
 ```
 
-API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)):
+API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)). Список ниже — это команды, которые содержатся в библиотеке в качестве примеров: методы `send...` отправляют команды TCI, методы `set...Callback` (кроме `setStatusChangeCallback`) вызываются на входящие команды. Остальные методы управляют подключением.
 
 | Метод | Описание |
 |-------|----------|

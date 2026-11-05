@@ -126,7 +126,7 @@ void loop() {
 }
 ```
 
-`TCIClient` API ([tci/tciclient.h](tci/tciclient.h)):
+`TCIClient` API ([tci/tciclient.h](tci/tciclient.h)). The list below shows the commands contained in the library as examples: the `send...` methods send TCI commands, the `set...Callback` methods (except `setStatusChangeCallback`) are called on incoming commands. The other methods control the connection.
 
 | Method | Description |
 |--------|-------------|
