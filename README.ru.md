@@ -148,7 +148,7 @@ API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)):
 Полный список команд TCI — в спецификации: [TCI-spec/TCI_protocol.md](TCI-spec/TCI_protocol.md).
 
 ## 💬 Статус и поддержка <a name = "support"></a>
-Библиотека полностью работоспособна, соответствует спецификации вендора и автором используется в проектах https://vk6nx.net/ER-PWR_control_en.html и https://vk6nx.net/ER-G450_control_en.html.
+Библиотека полностью работоспособна, соответствует спецификации вендора TCI 2.0 и автором используется в проектах https://vk6nx.net/ER-PWR_control_en.html и https://vk6nx.net/ER-G450_control_en.html.
 
 Вопросы по библиотеке — канал общей поддержки Expert Electronics https://t.me/+80QDiqigD4hkZTI6
 
