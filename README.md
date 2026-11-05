@@ -14,7 +14,7 @@ ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
   <b>English</b> | <a href="README.ru.md">Русский</a>
 </p>
 
-<h3 align="center">ESP32-TCI-lib</h3>
+<h3 align="center">ESP32 TCI library</h3>
 
 <div align="center">
 
