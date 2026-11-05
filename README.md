@@ -1,2 +1,171 @@
-# ESP32-TCI-lib
-ESP32 TCI lib
+<!--
+SPDX-License-Identifier: GPL-3.0-or-later
+
+ESP32 adaptation of TCI (Transceiver Control Interface).
+Developed on the basis of TCI, owned by Expert Electronics.
+TCI protocol specification: Copyright (c) 2021 Expert Electronics, MIT License
+  https://github.com/ExpertSDR3/TCI  (see licenses/TCI-LICENSE.txt)
+
+ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
+  (see licenses/GPL-3.0.txt)
+-->
+
+<p align="center">
+  <b>English</b> | <a href="README.ru.md">Русский</a>
+</p>
+
+<h3 align="center">ESP32-TCI-lib</h3>
+
+<div align="center">
+
+  [![GitHub Issues](https://img.shields.io/github/issues/VK6NX/ESP32-TCI-lib.svg)](https://github.com/VK6NX/ESP32-TCI-lib/issues)
+  [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/VK6NX/ESP32-TCI-lib.svg)](https://github.com/VK6NX/ESP32-TCI-lib/pulls)
+  [![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](tci/licenses/GPL-3.0.txt)
+
+</div>
+
+---
+
+<p align="center"> TCI (Transceiver Control Interface) WebSocket client for ESP32 (Arduino framework, PlatformIO).
+    <br> 
+</p>
+
+## 📝 Table of Contents
+- [About](#about)
+- [Getting Started](#getting_started)
+- [Usage](#usage)
+- [Status and Support](#support)
+- [Built Using](#built_using)
+- [License](#license)
+- [Authors](#authors)
+- [Acknowledgments](#acknowledgement)
+
+## 🧐 About <a name = "about"></a>
+TCI (Transceiver Control Interface) is a network protocol by Expert Electronics for control, data transfer and synchronization between a transceiver and client software or devices. TCI runs over WebSocket: the transceiver software (for example ExpertSDR3) is the server, all other programs and devices are clients.
+
+This project is an ESP32 adaptation developed on the basis of TCI, owned by Expert Electronics. It provides a TCI client for ESP32: it connects to a TCI server, reconnects automatically and passes parsed commands to user callbacks.
+
+| Path | Content |
+|------|---------|
+| [tci/](tci/) | Library: `TCIClient` and `TciMessageParser` |
+| [esp32_TCI_example/](esp32_TCI_example/) | Minimal PlatformIO example |
+| [TCI-spec/](TCI-spec/) | TCI protocol specification by Expert Electronics |
+
+## 🏁 Getting Started <a name = "getting_started"></a>
+These instructions will get the example running on an ESP32 board.
+
+### Prerequisites
+- [PlatformIO](https://platformio.org/) (CLI or IDE extension)
+- ESP32 board (the example targets `esp32dev`)
+- TCI server reachable over the network, for example ExpertSDR3
+
+### Installing
+Clone the repository:
+
+```
+git clone https://github.com/VK6NX/ESP32-TCI-lib.git
+cd ESP32-TCI-lib/esp32_TCI_example
+```
+
+Set the WiFi credentials and the TCI server address in [esp32_TCI_example/src/main.cpp](esp32_TCI_example/src/main.cpp):
+
+```cpp
+static const char* WIFI_SSID     = "your-ssid";
+static const char* WIFI_PASSWORD = "your-password";
+
+static const char* TCI_HOST = "192.168.1.100";
+static const uint16_t TCI_PORT = 40001;
+```
+
+Build, upload and open the serial monitor:
+
+```
+pio run -t upload
+pio device monitor
+```
+
+The example prints the connection status and every VFO change (values depend on your network and on the server state):
+
+```
+WiFi connected, IP: 192.168.1.50
+TCI status: Connecting
+TCI status: Connected
+VFO: receiver 0, channel 1, frequency 7100000 Hz
+```
+
+## 🎈 Usage <a name="usage"></a>
+Add the library to your PlatformIO project: copy the [tci/](tci/) folder into the `lib/` folder of the project, or point `lib_extra_dirs` to the folder that contains `tci/`, as the example does. Add the WebSockets dependency to `platformio.ini`:
+
+```ini
+lib_deps =
+	links2004/WebSockets@2.7.3
+```
+
+Minimal sketch:
+
+```cpp
+#include <WiFi.h>
+#include "tciclient.h"
+
+TCIClient tciClient("192.168.1.100", 40001);
+
+void setup() {
+    // Connect to WiFi first
+    tciClient.setVfoChangedCallback([](uint32_t receiver, uint32_t channel, double frequency) {
+        // VFO:receiver,channel,frequency;
+    });
+    tciClient.connect();
+}
+
+void loop() {
+    tciClient.loop();
+}
+```
+
+`TCIClient` API ([tci/tciclient.h](tci/tciclient.h)):
+
+| Method | Description |
+|--------|-------------|
+| `TCIClient(host, port)` | Creates the client, the address is `ws://host:port` |
+| `begin()`, `connect()` | Start the connection |
+| `disconnect()` | Close the connection |
+| `loop()` | Process WebSocket events, call it from `loop()` |
+| `isConnected()`, `getStatus()` | Connection state: `Disconnected`, `Connecting`, `Connected` |
+| `getConnectionStatus()` | Connection state as a string |
+| `sendCommand(command)` | Send a TCI command, for example `"VFO:0,0,7100000;"`. Ignored when not connected |
+| `updateConnection(host, port)` | Change the server, the reconnection is done on the next `loop()` |
+| `setAddress(address)` | Set the address in the `ws://host:port` form, used on the next connection |
+| `getHost()`, `getPort()`, `getAddress()` | Current server address |
+| `setStatusChangeCallback(callback)` | Called on every status change |
+| `setVfoChangedCallback(callback)` | Called on `VFO:arg1,arg2,arg3;` with receiver, channel and frequency in Hz |
+
+Behavior:
+- When the connection is lost, the status changes to `Connecting` and the client reconnects automatically every 5 seconds.
+- Incoming commands `VFO` and `READY` are recognized. `READY` has no user callback. `VFOCHANGED` is accepted as a custom alias of `VFO`, it is not a part of the TCI specification. Other commands and binary frames (IQ and audio streams) are ignored.
+- To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFOCHANGED`. The parser extracts up to three arguments.
+- One `TCIClient` instance per program: WebSocket events are routed through a static instance pointer.
+
+The full list of TCI commands is in the specification: [TCI-spec/TCI_protocol.md](TCI-spec/TCI_protocol.md).
+
+## 💬 Status and Support <a name = "support"></a>
+The library is fully functional, complies with the vendor specification and is used by the author in the projects https://vk6nx.net/ER-PWR_control_en.html and https://vk6nx.net/ER-G450_control_en.html.
+
+Questions about the library - Expert Electronics general support channel https://t.me/+80QDiqigD4hkZTI6
+
+## ⛏️ Built Using <a name = "built_using"></a>
+- [PlatformIO](https://platformio.org/) - Build system
+- [Arduino core for ESP32](https://github.com/espressif/arduino-esp32) - Framework
+- [arduinoWebSockets](https://github.com/Links2004/arduinoWebSockets) 2.7.3 - WebSocket client
+
+## ⚖️ License <a name = "license"></a>
+TCI (Transceiver Control Interface) is owned by Expert Electronics. The TCI protocol specification is Copyright (c) 2021 Expert Electronics and is distributed under the MIT License: https://github.com/ExpertSDR3/TCI, see [TCI-spec/MIT.txt](TCI-spec/MIT.txt).
+
+This ESP32 adaptation is developed on the basis of TCI. ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later, see [tci/licenses/GPL-3.0.txt](tci/licenses/GPL-3.0.txt).
+
+## ✍️ Authors <a name = "authors"></a>
+- [@VK6NX](https://github.com/VK6NX) - ESP32 adaptation
+
+See also the list of [contributors](https://github.com/VK6NX/ESP32-TCI-lib/contributors) who participated in this project.
+
+## 🎉 Acknowledgments <a name = "acknowledgement"></a>
+- [Expert Electronics](https://github.com/ExpertSDR3/TCI) - TCI protocol and specification
