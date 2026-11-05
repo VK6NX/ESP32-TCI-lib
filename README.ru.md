@@ -107,7 +107,7 @@ lib_deps =
 #include <WiFi.h>
 #include "tciclient.h"
 
-TCIClient tciClient("192.168.1.100", 40001);
+TCIClient tciClient("192.168.16.200", 50001);
 
 void setup() {
     // Сначала подключиться к WiFi
