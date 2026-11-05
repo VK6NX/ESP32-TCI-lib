@@ -14,7 +14,7 @@ ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
   <b>English</b> | <a href="README.ru.md">Русский</a>
 </p>
 
-<h3 align="center">ESP32 TCI library</h3>
+<h3 align="center">ESP32-TCI-lib</h3>
 
 <div align="center">
 
@@ -77,7 +77,7 @@ Set the WiFi credentials and the TCI server address in [esp32_TCI_example/src/ma
 static const char* WIFI_SSID     = "your-ssid";
 static const char* WIFI_PASSWORD = "your-password";
 
-static const char* TCI_HOST = "192.168.16.1";
+static const char* TCI_HOST = "192.168.16.200";
 static const uint16_t TCI_PORT = 50001;
 ```
 
@@ -111,7 +111,7 @@ Minimal sketch:
 #include <WiFi.h>
 #include "tciclient.h"
 
-TCIClient tciClient("192.168.16.1", 50001);
+TCIClient tciClient("192.168.16.200", 50001);
 
 void setup() {
     // Connect to WiFi first
@@ -136,12 +136,13 @@ void loop() {
 | `loop()` | Process WebSocket events, call it from `loop()` |
 | `isConnected()`, `getStatus()` | Connection state: `Disconnected`, `Connecting`, `Connected` |
 | `getConnectionStatus()` | Connection state as a string |
-| `sendCommand(command)` | Send a TCI command, for example `"VFO:0,0,7100000;"`. Ignored when not connected |
+| `sendCommand(command)` | Send a TCI command, for example `"VFO:0,0,7100000;"`. Ignored when not connected. Returns `true` when the command was sent to the socket, this does not mean that the server executed it |
 | `sendStart()`, `sendStop()` | Standard command: send `START;` / `STOP;`, start / stop the device |
 | `sendVfoRead(receiver, channel)` | Standard command: send `VFO:arg1,arg2;` (read), the reply comes to the VFO callback |
 | `sendVfoSet(receiver, channel, frequency)` | Standard command: send `VFO:arg1,arg2,arg3;` (set), frequency in Hz |
 | `sendTuneDrive(transceiver, power)` | Standard command: send `TUNE_DRIVE:arg1,arg2;`, power from 0 to 100 |
-| `sendCwMacros(transceiver, text)` | Standard command: send `CW_MACROS:arg1,arg2;`. In the text `:`, `,`, `;` are replaced with `^`, `~`, `*` as the specification requires |
+| `sendModulation(receiver, mode)` | Standard command: send `MODULATION:arg1,arg2;`, for example `MODULATION:0,CW;` |
+| `sendCwMacros(transceiver, text)` | Standard command: send `CW_MACROS:arg1,arg2;`. In the text `:`, `,`, `;` are replaced with `^`, `~`, `*` as the specification requires. Works only in the CW modulation (see `sendModulation`), with the transceiver started and no transmission by another client |
 | `sendCwMacrosStop()` | Standard command: send `CW_MACROS_STOP;`, stop the CW transmission immediately |
 | `updateConnection(host, port)` | Change the server, the reconnection is done on the next `loop()` |
 | `setAddress(address)` | Set the address in the `ws://host:port` form, used on the next connection |
@@ -158,10 +159,10 @@ void loop() {
 Behavior:
 - When the connection is lost, the status changes to `Connecting` and the client reconnects automatically every 5 seconds.
 - Initialization commands are limited to `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` and `MODULATIONS_LIST`, the ones the example prints, and `READY`, which sets the status to `Connected`.
-- Standard commands, examples of sending: `START`, `STOP`, `VFO` (read and set), `TUNE_DRIVE`, `CW_MACROS` and `CW_MACROS_STOP`. In the example they are sent by keys from the serial monitor when the status is `Connected`: `s` START, `x` STOP, `r` VFO read, `v` VFO set, `t` TUNE_DRIVE, `c` CW_MACROS, `q` CW_MACROS_STOP. The `c` key transmits on air, the `q` key stops the transmission.
+- Standard commands, examples of sending: `START`, `STOP`, `VFO` (read and set), `TUNE_DRIVE`, `MODULATION`, `CW_MACROS` and `CW_MACROS_STOP`. In the example they are sent by keys from the serial monitor when the status is `Connected`: `s` START, `x` STOP, `r` VFO read, `v` VFO set, `t` TUNE_DRIVE, `m` MODULATION CW, `c` CW_MACROS, `q` CW_MACROS_STOP. The `c` key transmits on air, the `q` key stops the transmission.
 - Handling of the incoming `VFO` is a customization example: it shows how to add a command needed by the application. `VFOCHANGED` is accepted as a custom alias of `VFO`, it is not a part of the TCI specification.
 - Binary frames (IQ and audio streams) are ignored.
-- To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFO`. `extractArgs()` extracts up to three arguments, `extractList()` extracts a list of any length, as for `MODULATIONS_LIST`.
+- To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFO`. `extractArgs()` extracts up to three arguments, `extractList()` extracts a list of any length, as for `MODULATIONS_LIST`. Text arguments from the server (for example `CW_MON`, `CALLSIGN_SEND`) come with `^`, `~`, `*` in place of `:`, `,`, `;`, the handler must replace them back.
 - One `TCIClient` instance per program: WebSocket events are routed through a static instance pointer.
 - Server behavior (TCI specification 2.1, §4.7): a parameter changed by ExpertSDR3 or another client is locked for 200 ms, a set request within this window is dropped. Fast changes of one parameter are merged on a 30 ms tick, so the VFO callback may not receive all intermediate values.
 

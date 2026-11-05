@@ -14,7 +14,7 @@ ESP32 adaptation: Copyright (c) 2026 VK6NX, GPL-3.0-or-later
   <a href="README.md">English</a> | <b>Русский</b>
 </p>
 
-<h3 align="center">ESP32 TCI library</h3>
+<h3 align="center">ESP32-TCI-lib</h3>
 
 <div align="center">
 
@@ -77,7 +77,7 @@ cd ESP32-TCI-lib/esp32_TCI_example
 static const char* WIFI_SSID     = "your-ssid";
 static const char* WIFI_PASSWORD = "your-password";
 
-static const char* TCI_HOST = "192.168.16.1";
+static const char* TCI_HOST = "192.168.16.200";
 static const uint16_t TCI_PORT = 50001;
 ```
 
@@ -111,7 +111,7 @@ lib_deps =
 #include <WiFi.h>
 #include "tciclient.h"
 
-TCIClient tciClient("192.168.16.1", 50001);
+TCIClient tciClient("192.168.16.200", 50001);
 
 void setup() {
     // Сначала подключиться к WiFi
@@ -136,12 +136,13 @@ API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)). Список ниже — 
 | `loop()` | Обработка событий WebSocket, вызывать из `loop()` |
 | `isConnected()`, `getStatus()` | Состояние подключения: `Disconnected`, `Connecting`, `Connected` |
 | `getConnectionStatus()` | Состояние подключения строкой |
-| `sendCommand(command)` | Отправить команду TCI, например `"VFO:0,0,7100000;"`. Без подключения игнорируется |
+| `sendCommand(command)` | Отправить команду TCI, например `"VFO:0,0,7100000;"`. Без подключения игнорируется. Возвращает `true`, если команда ушла в сокет; это не значит, что сервер её выполнил |
 | `sendStart()`, `sendStop()` | Стандартная команда: отправить `START;` / `STOP;`, запуск / остановка устройства |
 | `sendVfoRead(receiver, channel)` | Стандартная команда: отправить `VFO:arg1,arg2;` (чтение), ответ приходит в VFO callback |
 | `sendVfoSet(receiver, channel, frequency)` | Стандартная команда: отправить `VFO:arg1,arg2,arg3;` (установка), частота в Гц |
 | `sendTuneDrive(transceiver, power)` | Стандартная команда: отправить `TUNE_DRIVE:arg1,arg2;`, мощность от 0 до 100 |
-| `sendCwMacros(transceiver, text)` | Стандартная команда: отправить `CW_MACROS:arg1,arg2;`. В тексте `:`, `,`, `;` заменяются на `^`, `~`, `*`, как требует спецификация |
+| `sendModulation(receiver, mode)` | Стандартная команда: отправить `MODULATION:arg1,arg2;`, например `MODULATION:0,CW;` |
+| `sendCwMacros(transceiver, text)` | Стандартная команда: отправить `CW_MACROS:arg1,arg2;`. В тексте `:`, `,`, `;` заменяются на `^`, `~`, `*`, как требует спецификация. Работает только в режиме CW (см. `sendModulation`), при включённом трансивере и без чужой передачи |
 | `sendCwMacrosStop()` | Стандартная команда: отправить `CW_MACROS_STOP;`, немедленно остановить передачу CW |
 | `updateConnection(host, port)` | Сменить сервер, переподключение выполняется в следующем `loop()` |
 | `setAddress(address)` | Задать адрес в виде `ws://host:port`, применяется при следующем подключении |
@@ -158,10 +159,10 @@ API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)). Список ниже — 
 Поведение:
 - При потере связи состояние меняется на `Connecting`, клиент автоматически переподключается каждые 5 секунд.
 - Команды инициализации ограничены командами `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` и `MODULATIONS_LIST`, которые выводит пример, и `READY`, который переводит состояние в `Connected`.
-- Стандартные команды, примеры отправки: `START`, `STOP`, `VFO` (чтение и установка), `TUNE_DRIVE`, `CW_MACROS` и `CW_MACROS_STOP`. В примере они отправляются клавишами из монитора последовательного порта при состоянии `Connected`: `s` START, `x` STOP, `r` чтение VFO, `v` установка VFO, `t` TUNE_DRIVE, `c` CW_MACROS, `q` CW_MACROS_STOP. Клавиша `c` включает передачу в эфир, клавиша `q` её останавливает.
+- Стандартные команды, примеры отправки: `START`, `STOP`, `VFO` (чтение и установка), `TUNE_DRIVE`, `MODULATION`, `CW_MACROS` и `CW_MACROS_STOP`. В примере они отправляются клавишами из монитора последовательного порта при состоянии `Connected`: `s` START, `x` STOP, `r` чтение VFO, `v` установка VFO, `t` TUNE_DRIVE, `m` MODULATION CW, `c` CW_MACROS, `q` CW_MACROS_STOP. Клавиша `c` включает передачу в эфир, клавиша `q` её останавливает.
 - Обработка входящей `VFO` — пример кастомизации: показывает, как добавить команду, нужную приложению. `VFOCHANGED` принимается как собственный псевдоним `VFO`, в спецификацию TCI он не входит.
 - Бинарные кадры (IQ- и аудиопотоки) игнорируются.
-- Для обработки других команд нужно расширить `TciMessageParser::process()` в [tci/tciparser.cpp](tci/tciparser.cpp) так же, как сделано для `VFO`. `extractArgs()` извлекает до трёх аргументов, `extractList()` — список любой длины, как для `MODULATIONS_LIST`.
+- Для обработки других команд нужно расширить `TciMessageParser::process()` в [tci/tciparser.cpp](tci/tciparser.cpp) так же, как сделано для `VFO`. `extractArgs()` извлекает до трёх аргументов, `extractList()` — список любой длины, как для `MODULATIONS_LIST`. Текстовые аргументы от сервера (например, `CW_MON`, `CALLSIGN_SEND`) приходят с `^`, `~`, `*` вместо `:`, `,`, `;`, обработчик должен заменить их обратно.
 - Один экземпляр `TCIClient` на программу: события WebSocket передаются через статический указатель на экземпляр.
 - Особенности сервера (спецификация TCI 2.1, §4.7): параметр, изменённый в ExpertSDR3 или другим клиентом, блокируется на 200 мс, запрос на установку в это время отбрасывается. Быстрые изменения одного параметра склеиваются на тике 30 мс, поэтому VFO-колбэк может получить не все промежуточные значения.
 
