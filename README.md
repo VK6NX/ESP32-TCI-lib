@@ -156,10 +156,10 @@ void loop() {
 
 Behavior:
 - When the connection is lost, the status changes to `Connecting` and the client reconnects automatically every 5 seconds.
-- Initialization commands are limited to `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` and `MODULATIONS_LIST`, the ones the example prints, and `READY`, which sets the status to `Connected`. Other initialization commands, for example `IF_LIMITS` and `RECEIVE_ONLY`, are ignored.
+- Initialization commands are limited to `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` and `MODULATIONS_LIST`, the ones the example prints, and `READY`, which sets the status to `Connected`.
 - Standard commands, examples of sending: `START`, `STOP`, `VFO` (read and set), `TUNE_DRIVE` and `CW_MACROS`. In the example they are sent by keys from the serial monitor when the status is `Connected`: `s` START, `x` STOP, `r` VFO read, `v` VFO set, `t` TUNE_DRIVE, `c` CW_MACROS. The `c` key transmits on air.
 - Handling of the incoming `VFO` is a customization example: it shows how to add a command needed by the application. `VFOCHANGED` is accepted as a custom alias of `VFO`, it is not a part of the TCI specification.
-- Other commands and binary frames (IQ and audio streams) are ignored.
+- Binary frames (IQ and audio streams) are ignored.
 - To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFO`. `extractArgs()` extracts up to three arguments, `extractList()` extracts a list of any length, as for `MODULATIONS_LIST`.
 - One `TCIClient` instance per program: WebSocket events are routed through a static instance pointer.
 
