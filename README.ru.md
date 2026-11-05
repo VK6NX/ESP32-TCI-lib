@@ -165,7 +165,5 @@ API `TCIClient` ([tci/tciclient.h](tci/tciclient.h)):
 ## ✍️ Авторы <a name = "authors"></a>
 - [@VK6NX](https://github.com/VK6NX) — Адаптация для ESP32
 
-См. также список [участников](https://github.com/VK6NX/ESP32-TCI-lib/contributors) проекта.
-
 ## 🎉 Благодарности <a name = "acknowledgement"></a>
 - [Expert Electronics](https://github.com/ExpertSDR3/TCI) — Протокол и спецификация TCI
