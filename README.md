@@ -142,6 +142,7 @@ void loop() {
 | `sendVfoSet(receiver, channel, frequency)` | Standard command: send `VFO:arg1,arg2,arg3;` (set), frequency in Hz |
 | `sendTuneDrive(transceiver, power)` | Standard command: send `TUNE_DRIVE:arg1,arg2;`, power from 0 to 100 |
 | `sendCwMacros(transceiver, text)` | Standard command: send `CW_MACROS:arg1,arg2;`. In the text `:`, `,`, `;` are replaced with `^`, `~`, `*` as the specification requires |
+| `sendCwMacrosStop()` | Standard command: send `CW_MACROS_STOP;`, stop the CW transmission immediately |
 | `updateConnection(host, port)` | Change the server, the reconnection is done on the next `loop()` |
 | `setAddress(address)` | Set the address in the `ws://host:port` form, used on the next connection |
 | `getHost()`, `getPort()`, `getAddress()` | Current server address |
@@ -157,11 +158,12 @@ void loop() {
 Behavior:
 - When the connection is lost, the status changes to `Connecting` and the client reconnects automatically every 5 seconds.
 - Initialization commands are limited to `PROTOCOL`, `DEVICE`, `TRX_COUNT`, `CHANNELS_COUNT`, `VFO_LIMITS` and `MODULATIONS_LIST`, the ones the example prints, and `READY`, which sets the status to `Connected`.
-- Standard commands, examples of sending: `START`, `STOP`, `VFO` (read and set), `TUNE_DRIVE` and `CW_MACROS`. In the example they are sent by keys from the serial monitor when the status is `Connected`: `s` START, `x` STOP, `r` VFO read, `v` VFO set, `t` TUNE_DRIVE, `c` CW_MACROS. The `c` key transmits on air.
+- Standard commands, examples of sending: `START`, `STOP`, `VFO` (read and set), `TUNE_DRIVE`, `CW_MACROS` and `CW_MACROS_STOP`. In the example they are sent by keys from the serial monitor when the status is `Connected`: `s` START, `x` STOP, `r` VFO read, `v` VFO set, `t` TUNE_DRIVE, `c` CW_MACROS, `q` CW_MACROS_STOP. The `c` key transmits on air, the `q` key stops the transmission.
 - Handling of the incoming `VFO` is a customization example: it shows how to add a command needed by the application. `VFOCHANGED` is accepted as a custom alias of `VFO`, it is not a part of the TCI specification.
 - Binary frames (IQ and audio streams) are ignored.
 - To handle more commands, extend `TciMessageParser::process()` in [tci/tciparser.cpp](tci/tciparser.cpp) the same way as `VFO`. `extractArgs()` extracts up to three arguments, `extractList()` extracts a list of any length, as for `MODULATIONS_LIST`.
 - One `TCIClient` instance per program: WebSocket events are routed through a static instance pointer.
+- Server behavior (TCI specification 2.1, §4.7): a parameter changed by ExpertSDR3 or another client is locked for 200 ms, a set request within this window is dropped. Fast changes of one parameter are merged on a 30 ms tick, so the VFO callback may not receive all intermediate values.
 
 The full list of TCI commands is in the specification: [TCI Protocol 2.1.pdf](https://github.com/ExpertSDR3/TCI/blob/main/TCI%20Protocol%202.1.pdf).
 
